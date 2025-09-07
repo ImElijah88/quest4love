@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Level Quiz App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .sidebar {
+        transition: transform 0.3s ease-in-out;
+      }
+      .backdrop {
+        transition: opacity 0.3s ease-in-out;
+      }
+      .gradient-bg {
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+      }
+      @keyframes gradient {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+      .glasmorphism {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      }
+      .correct-answer {
+        background: rgba(74, 222, 128, 0.5) !important;
+        border-color: rgba(74, 222, 128, 0.8) !important;
+      }
+      .incorrect-answer {
+        background: rgba(248, 113, 113, 0.5) !important;
+        border-color: rgba(248, 113, 113, 0.8) !important;
+      }
+      .choice-btn {
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+      .choice-btn:hover:not(:disabled) {
+        transform: translateY(-5px) scale(1.05);
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .selected {
+        transform: scale(1.1);
+        background: rgba(255, 255, 255, 0.3);
+        border-width: 2px;
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+      .correct-position {
+        background: rgba(74, 222, 128, 0.5) !important;
+        border-color: rgba(74, 222, 128, 0.8) !important;
+      }
+      .button-ready {
+        background-color: #4ade80 !important;
+        color: #172554 !important;
+        font-weight: 700;
+      }
+      .input-correct {
+        border-color: #4ade80;
+        color: #4ade80;
+      }
+      .input-incorrect {
+        border-color: #f87171;
+        color: #f87171;
+      }
+      #locket-container {
+        cursor: pointer;
+        width: 150px;
+        margin: 0 auto 1.5rem auto;
+      }
+      #locket {
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        transform-origin: center bottom;
+        animation: pulse 2s infinite;
+      }
+      #locket.unlocked #heart-left {
+        transform: rotate(-45deg) translateX(-25px) translateY(-25px);
+      }
+      #locket.unlocked #heart-right {
+        transform: rotate(45deg) translateX(25px) translateY(-25px);
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+    </style>
+  </head>
+  <body class="gradient-bg text-white overflow-x-hidden">
+    <!-- Sidebar Menu -->
+    <div
+      id="sidebar"
+      class="sidebar fixed top-0 left-0 h-full w-64 glasmorphism p-6 z-30 transform -translate-x-full"
+    >
+      <h2 class="text-2xl font-bold mb-8">Menu</h2>
+      <nav class="flex flex-col space-y-4">
+        <a href="#" class="hover:text-yellow-300">My Profile</a>
+        <a href="#" class="hover:text-yellow-300">Contact Us</a>
+        <a href="#" class="hover:text-yellow-300">Settings</a>
+        <button id="login-menu-btn" class="text-left hover:text-yellow-300">
+          Login
+        </button>
+        <button id="logout-btn" class="hidden text-left hover:text-yellow-300">
+          Logout
+        </button>
+      </nav>
+    </div>
+    <div
+      id="backdrop"
+      class="backdrop fixed top-0 left-0 w-full h-full bg-black/50 z-20 opacity-0 pointer-events-none"
+    ></div>
+
+    <!-- Main Content -->
+    <div
+      class="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-y-auto"
+    >
+      <button id="menu-btn" class="absolute top-5 left-5 z-10">
+        <svg
+          class="w-8 h-8"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          ></path>
+        </svg>
+      </button>
+
+      <!-- Welcome Screen -->
+      <div id="welcome-screen" class="w-full max-w-xs mx-auto text-center">
+        <div id="locket-container" title="Click to Begin">
+          <svg
+            id="locket"
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient
+                id="goldGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop
+                  offset="0%"
+                  style="stop-color: #fef08a; stop-opacity: 1"
+                />
+                <stop
+                  offset="100%"
+                  style="stop-color: #fde047; stop-opacity: 1"
+                />
+              </linearGradient>
+            </defs>
+            <g id="heart-halves">
+              <path
+                id="heart-left"
+                fill="url(#goldGradient)"
+                d="M50 100 C 40 90, 10 60, 10 40 C 10 20, 30 10, 50 25 V 100 Z"
+              />
+              <path
+                id="heart-right"
+                fill="url(#goldGradient)"
+                d="M50 100 C 60 90, 90 60, 90 40 C 90 20, 70 10, 50 25 V 100 Z"
+              />
+            </g>
+          </svg>
+        </div>
+        <p class="mt-4 text-lg font-semibold">Unlock His Heart</p>
+      </div>
+
+      <!-- Level Selection Screen -->
+      <div
+        id="level-selection-screen"
+        class="hidden w-full max-w-xs mx-auto text-center"
+      >
+        <h1 class="text-3xl md:text-4xl font-bold mb-6">answer with caution</h1>
+        <div class="space-y-2 flex flex-col items-center">
+          <button
+            id="start-level-1-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>🗝️</span><span>Level 1</span>
+          </button>
+          <button
+            id="start-level-2-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>🤔</span><span>Level 2</span>
+          </button>
+          <button
+            id="start-level-3-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>📊</span><span>Level 3</span>
+          </button>
+          <button
+            id="start-level-4-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>🎭</span><span>Level 4</span>
+          </button>
+          <button
+            id="start-level-5-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>🖼️</span><span>Level 5</span>
+          </button>
+          <button
+            id="start-level-6-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>✍️</span><span>Level 6</span>
+          </button>
+          <button
+            id="start-level-7-btn"
+            class="glasmorphism w-[150px] text-md font-semibold py-2 px-4 rounded-lg hover:bg-white/20 transition-transform duration-300 transform hover:scale-105 border border-white/30 flex items-center justify-start text-left space-x-3"
+          >
+            <span>📜</span><span>Level 7</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Level 1: Sudden Death Trivia -->
+      <div id="level-1-quiz" class="hidden w-full max-w-2xl mx-auto">
+        <div class="glasmorphism p-8">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l1-start" class="text-center">
+            <h1 class="text-3xl font-bold mb-4">Keys to His Heart Trivia</h1>
+            <p class="text-gray-200 mb-6">
+              These questions are based on common male psychology. One wrong
+              answer sends you back to the start!
+            </p>
+            <button
+              id="l1-start-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l1-question" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-lg">
+              <div id="l1-timer-text" class="font-bold">Time: 30</div>
+              <div class="font-bold flex items-center">
+                <span>❤️</span>
+                <span id="l1-hearts-count" class="ml-2">0</span>
+              </div>
+            </div>
+            <h2 id="l1-question-text" class="text-2xl font-semibold mb-6">
+              Question text goes here.
+            </h2>
+            <div id="l1-options-container" class="space-y-3"></div>
+            <p id="l1-progress-text" class="text-sm text-gray-200 mt-6"></p>
+          </div>
+          <div id="l1-end" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4"></h2>
+            <p id="l1-score-text" class="text-gray-200 mb-6"></p>
+            <button
+              id="l1-restart-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 2: This or That -->
+      <div id="level-2-quiz" class="hidden w-full max-w-4xl mx-auto">
+        <div class="glasmorphism p-6 md:p-10 text-center">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l2-start-screen">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+              The Girlfriend Test
+            </h1>
+            <p class="text-lg text-gray-200 mb-8">
+              Your choices reveal your dating style. Be honest!
+            </p>
+            <button
+              id="l2-start-btn"
+              class="glasmorphism text-xl font-semibold py-3 px-10 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l2-question-screen" class="hidden">
+            <p id="l2-progress-text" class="mb-4 text-gray-300"></p>
+            <h2 id="l2-question-text" class="text-3xl font-bold mb-8"></h2>
+            <div
+              class="flex flex-col md:flex-row justify-center items-center gap-6"
+            >
+              <button
+                id="l2-choice-a"
+                class="choice-btn glasmorphism w-full md:w-64 h-48 md:h-64 flex items-center justify-center p-6 rounded-2xl text-2xl font-bold"
+              ></button>
+              <span class="text-2xl font-bold">OR</span>
+              <button
+                id="l2-choice-b"
+                class="choice-btn glasmorphism w-full md:w-64 h-48 md:h-64 flex items-center justify-center p-6 rounded-2xl text-2xl font-bold"
+              ></button>
+            </div>
+          </div>
+          <div id="l2-results-screen" class="hidden">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">Your Result!</h1>
+            <p
+              id="l2-result-text"
+              class="text-2xl text-yellow-300 font-semibold mb-6"
+            ></p>
+            <p
+              id="l2-result-description"
+              class="text-lg text-gray-200 mb-8 max-w-2xl mx-auto"
+            ></p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                id="l2-play-again-btn"
+                class="glasmorphism text-xl font-semibold py-3 px-10 rounded-full hover:bg-white/20"
+              >
+                Play Again
+              </button>
+              <button
+                id="l2-next-level-btn"
+                class="glasmorphism text-xl font-semibold py-3 px-10 rounded-full hover:bg-white/20"
+              >
+                Next Level
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 3: Rank & Order -->
+      <div id="level-3-quiz" class="hidden w-full max-w-2xl mx-auto">
+        <div class="glasmorphism p-8">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l3-start-screen" class="text-center">
+            <h1 class="text-3xl font-bold mb-4">Rank His Priorities</h1>
+            <p class="text-gray-200 mb-6">
+              Drag and drop the items into the correct order of importance. One
+              wrong ranking ends the game!
+            </p>
+            <button
+              id="l3-start-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l3-question-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-lg">
+              <div id="l3-timer-text" class="font-bold">Time: 30</div>
+              <div class="font-bold flex items-center">
+                <span>❤️</span>
+                <span id="l3-hearts-count" class="ml-2">0</span>
+              </div>
+            </div>
+            <p
+              id="l3-progress-text"
+              class="text-sm text-gray-200 mb-4 text-right"
+            ></p>
+            <h2 id="l3-question-text" class="text-2xl font-semibold mb-6"></h2>
+            <ul id="l3-rank-list" class="space-y-3 mb-6"></ul>
+            <button
+              id="l3-submit-btn"
+              class="glasmorphism w-full text-lg font-semibold py-3 rounded-lg hover:bg-white/20"
+            >
+              Lock In Your Answer
+            </button>
+          </div>
+          <div id="l3-end-screen" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4"></h2>
+            <p id="l3-score-text" class="text-gray-200 mb-6"></p>
+            <button
+              id="l3-restart-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 4: Scenario Showdown -->
+      <div id="level-4-quiz" class="hidden w-full max-w-2xl mx-auto">
+        <div class="glasmorphism p-8">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l4-start" class="text-center">
+            <h1 class="text-3xl font-bold mb-4">Scenario Showdown</h1>
+            <p class="text-gray-200 mb-6">
+              Choose the best response to these common relationship scenarios.
+              One wrong answer ends the game!
+            </p>
+            <button
+              id="l4-start-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l4-question" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-lg">
+              <div id="l4-timer-text" class="font-bold">Time: 30</div>
+              <div class="font-bold flex items-center">
+                <span>❤️</span>
+                <span id="l4-hearts-count" class="ml-2">0</span>
+              </div>
+            </div>
+            <h2 id="l4-question-text" class="text-2xl font-semibold mb-6"></h2>
+            <div id="l4-options-container" class="space-y-3"></div>
+            <p id="l4-progress-text" class="text-sm text-gray-200 mt-6"></p>
+          </div>
+          <div id="l4-end" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4"></h2>
+            <p id="l4-score-text" class="text-gray-200 mb-6"></p>
+            <button
+              id="l4-restart-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 5: Image Association -->
+      <div id="level-5-quiz" class="hidden w-full max-w-2xl mx-auto">
+        <div class="glasmorphism p-8">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l5-start" class="text-center">
+            <h1 class="text-3xl font-bold mb-4">Image Association</h1>
+            <p class="text-gray-200 mb-6">
+              Choose the word that best represents what this image means to a
+              man in a relationship. One wrong answer ends the game!
+            </p>
+            <button
+              id="l5-start-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l5-question" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-lg">
+              <div id="l5-timer-text" class="font-bold">Time: 30</div>
+              <div class="font-bold flex items-center">
+                <span>❤️</span>
+                <span id="l5-hearts-count" class="ml-2">0</span>
+              </div>
+            </div>
+            <p
+              id="l5-progress-text"
+              class="text-sm text-gray-200 mb-4 text-right"
+            ></p>
+            <div
+              class="w-full h-64 md:h-80 rounded-lg mb-6 bg-black/20 flex items-center justify-center"
+            >
+              <img
+                id="l5-image"
+                src=""
+                alt="Relationship concept image"
+                class="max-w-full max-h-full rounded-lg object-contain"
+              />
+            </div>
+            <div id="l5-options-container" class="grid grid-cols-2 gap-4"></div>
+          </div>
+          <div id="l5-end" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4"></h2>
+            <p id="l5-score-text" class="text-gray-200 mb-6"></p>
+            <button
+              id="l5-restart-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 6: Fill in the Blank -->
+      <div id="level-6-quiz" class="hidden w-full max-w-2xl mx-auto">
+        <div class="glasmorphism p-8">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l6-start" class="text-center">
+            <h1 class="text-3xl font-bold mb-4">Fill in the Blank</h1>
+            <p class="text-gray-200 mb-6">
+              Type the correct word to complete the sentence. Spelling counts,
+              but case doesn't. One wrong answer ends the game!
+            </p>
+            <button
+              id="l6-start-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l6-question" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-lg">
+              <div id="l6-timer-text" class="font-bold">Time: 30</div>
+              <div class="font-bold flex items-center">
+                <span>❤️</span>
+                <span id="l6-hearts-count" class="ml-2">0</span>
+              </div>
+            </div>
+            <p
+              id="l6-progress-text"
+              class="text-sm text-gray-200 mb-4 text-right"
+            ></p>
+            <div
+              id="l6-question-container"
+              class="text-2xl font-semibold mb-6 text-center"
+            ></div>
+            <div id="l6-hint-container" class="text-center mb-4">
+              <button
+                id="l6-hint-btn"
+                class="text-yellow-300 text-sm hover:text-yellow-200"
+              >
+                Need a hint?
+              </button>
+              <p id="l6-hint-text" class="text-gray-200 mt-2 hidden"></p>
+            </div>
+            <form id="l6-form">
+              <input
+                id="l6-input"
+                type="text"
+                class="w-full p-3 bg-white/20 border-2 border-white/30 rounded-lg placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-300 text-center text-xl"
+                autocomplete="off"
+              />
+              <button
+                type="submit"
+                class="glasmorphism w-full text-lg font-semibold py-3 rounded-lg hover:bg-white/20 mt-6"
+              >
+                Submit Answer
+              </button>
+            </form>
+          </div>
+          <div id="l6-end" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4"></h2>
+            <p id="l6-score-text" class="text-gray-200 mb-6"></p>
+            <button
+              id="l6-restart-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 7: Quote Identification -->
+      <div id="level-7-quiz" class="hidden w-full max-w-2xl mx-auto">
+        <div class="glasmorphism p-8">
+          <button
+            class="back-to-levels-btn mb-4 text-yellow-300 hover:text-yellow-400"
+          >
+            &larr; Back to Levels
+          </button>
+          <div id="l7-start" class="text-center">
+            <h1 class="text-3xl font-bold mb-4">Quote Identification</h1>
+            <p class="text-gray-200 mb-6">
+              Analyze the quote and choose the best interpretation. One wrong
+              answer ends the game!
+            </p>
+            <button
+              id="l7-start-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Start
+            </button>
+          </div>
+          <div id="l7-question" class="hidden">
+            <div class="flex justify-between items-center mb-4 text-lg">
+              <div id="l7-timer-text" class="font-bold">Time: 30</div>
+              <div class="font-bold flex items-center">
+                <span>❤️</span>
+                <span id="l7-hearts-count" class="ml-2">0</span>
+              </div>
+            </div>
+            <p
+              id="l7-progress-text"
+              class="text-sm text-gray-200 mb-4 text-right"
+            ></p>
+            <blockquote
+              id="l7-quote-text"
+              class="text-2xl font-semibold mb-6 text-center italic p-4 border-l-4 border-yellow-300"
+            ></blockquote>
+            <div id="l7-options-container" class="space-y-3"></div>
+          </div>
+          <div id="l7-end" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4"></h2>
+            <p id="l7-score-text" class="text-gray-200 mb-6"></p>
+            <button
+              id="l7-restart-btn"
+              class="glasmorphism text-lg font-semibold py-2 px-8 rounded-full hover:bg-white/20"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div
+      id="login-modal"
+      class="fixed inset-0 z-40 items-center justify-center bg-black/60 hidden"
+    >
+      <div
+        class="glasmorphism p-8 rounded-lg w-full max-w-sm mx-auto text-center relative"
+      >
+        <button id="close-modal-btn" class="absolute top-3 right-4 text-2xl">
+          &times;
+        </button>
+        <h2 class="text-2xl font-bold mb-6">Login</h2>
+        <form id="login-form" class="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            class="w-full p-3 bg-white/20 border border-white/30 rounded-lg placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            class="w-full p-3 bg-white/20 border border-white/30 rounded-lg placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            required
+          />
+          <button
+            type="submit"
+            class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition-colors"
+          >
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const TIME_LIMIT = 30;
+
+        // --- General App State & Elements ---
+        const welcomeScreen = document.getElementById("welcome-screen");
+        const levelSelectionScreen = document.getElementById(
+          "level-selection-screen"
+        );
+        const level1Quiz = document.getElementById("level-1-quiz");
+        const level2Quiz = document.getElementById("level-2-quiz");
+        const level3Quiz = document.getElementById("level-3-quiz");
+        const level4Quiz = document.getElementById("level-4-quiz");
+        const level5Quiz = document.getElementById("level-5-quiz");
+        const level6Quiz = document.getElementById("level-6-quiz");
+        const level7Quiz = document.getElementById("level-7-quiz");
+        const startLevel1Btn = document.getElementById("start-level-1-btn");
+        const startLevel2Btn = document.getElementById("start-level-2-btn");
+        const startLevel3Btn = document.getElementById("start-level-3-btn");
+        const startLevel4Btn = document.getElementById("start-level-4-btn");
+        const startLevel5Btn = document.getElementById("start-level-5-btn");
+        const startLevel6Btn = document.getElementById("start-level-6-btn");
+        const startLevel7Btn = document.getElementById("start-level-7-btn");
+        const backToLevelsBtns = document.querySelectorAll(
+          ".back-to-levels-btn"
+        );
+        const locketContainer = document.getElementById("locket-container");
+        const locket = document.getElementById("locket");
+
+        let totalHearts = 0;
+        let level2Unlocked = true;
+        let level3Unlocked = true;
+        let level4Unlocked = true;
+        let level5Unlocked = true;
+        let level6Unlocked = true;
+        let level7Unlocked = true;
+
+        // --- Screen Navigation ---
+        function showScreen(screen) {
+          welcomeScreen.classList.add("hidden");
+          levelSelectionScreen.classList.add("hidden");
+          level1Quiz.classList.add("hidden");
+          level2Quiz.classList.add("hidden");
+          level3Quiz.classList.add("hidden");
+          level4Quiz.classList.add("hidden");
+          level5Quiz.classList.add("hidden");
+          level6Quiz.classList.add("hidden");
+          level7Quiz.classList.add("hidden");
+          screen.classList.remove("hidden");
+        }
+
+        function showLevelSelectionScreen() {
+          startLevel2Btn.disabled = !level2Unlocked;
+          startLevel3Btn.disabled = !level3Unlocked;
+          startLevel4Btn.disabled = !level4Unlocked;
+          startLevel5Btn.disabled = !level5Unlocked;
+          startLevel6Btn.disabled = !level6Unlocked;
+          startLevel7Btn.disabled = !level7Unlocked;
+          showScreen(levelSelectionScreen);
+        }
+
+        locketContainer.addEventListener("click", () => {
+          locket.classList.add("unlocked");
+          locket.style.animation = "none"; // Stop pulsing
+          setTimeout(() => {
+            showLevelSelectionScreen();
+          }, 600); // Wait for unlock animation
+        });
+
+        startLevel1Btn.addEventListener("click", () => showScreen(level1Quiz));
+        startLevel2Btn.addEventListener("click", () => showScreen(level2Quiz));
+        startLevel3Btn.addEventListener("click", () => showScreen(level3Quiz));
+        startLevel4Btn.addEventListener("click", () => showScreen(level4Quiz));
+        startLevel5Btn.addEventListener("click", () => showScreen(level5Quiz));
+        startLevel6Btn.addEventListener("click", () => showScreen(level6Quiz));
+        startLevel7Btn.addEventListener("click", () => showScreen(level7Quiz));
+        backToLevelsBtns.forEach((btn) =>
+          btn.addEventListener("click", showLevelSelectionScreen)
+        );
+
+        // --- Sidebar & Modal Logic (omitted for brevity) ---
+        const menuBtn = document.getElementById("menu-btn");
+        const sidebar = document.getElementById("sidebar");
+        const backdrop = document.getElementById("backdrop");
+        const loginModal = document.getElementById("login-modal");
+        const loginMenuBtn = document.getElementById("login-menu-btn");
+        const closeModalBtn = document.getElementById("close-modal-btn");
+        const loginForm = document.getElementById("login-form");
+        const logoutBtn = document.getElementById("logout-btn");
+        const toggleMenu = (open) => {
+          if (open) {
+            sidebar.classList.remove("-translate-x-full");
+            backdrop.classList.remove("opacity-0", "pointer-events-none");
+          } else {
+            sidebar.classList.add("-translate-x-full");
+            backdrop.classList.add("opacity-0", "pointer-events-none");
+          }
+        };
+        menuBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleMenu(true);
+        });
+        backdrop.addEventListener("click", () => toggleMenu(false));
+        loginMenuBtn.addEventListener("click", () => {
+          loginModal.classList.add("flex");
+          loginModal.classList.remove("hidden");
+          toggleMenu(false);
+        });
+        closeModalBtn.addEventListener("click", () => {
+          loginModal.classList.add("hidden");
+          loginModal.classList.remove("flex");
+        });
+        loginForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          loginModal.classList.add("hidden");
+          loginModal.classList.remove("flex");
+          loginMenuBtn.classList.add("hidden");
+          logoutBtn.classList.remove("hidden");
+          console.log("Logged in successfully! (simulation)");
+        });
+        logoutBtn.addEventListener("click", () => {
+          loginMenuBtn.classList.remove("hidden");
+          logoutBtn.classList.add("hidden");
+          console.log("Logged out! (simulation)");
+        });
+
+        // --- LEVEL 1 LOGIC ---
+        const l1QuizData = [
+          {
+            question:
+              "According to many relationship experts, what is a man's primary emotional need, often valued even more than love?",
+            options: [
+              "Constant Affection",
+              "Financial Support",
+              "Respect",
+              "Compliments",
+            ],
+            correct: 2,
+          },
+          {
+            question:
+              "When a woman shares a problem, what is a man's typical first instinct?",
+            options: [
+              "To offer a solution",
+              "To share a similar story",
+              "To just listen quietly",
+              "To offer a hug",
+            ],
+            correct: 0,
+          },
+          {
+            question:
+              "What is a powerful way to make a man feel valued and seen in a relationship?",
+            options: [
+              "Criticizing his mistakes to help him improve",
+              "Verbally appreciating his efforts",
+              "Buying him expensive gifts",
+              "Giving him space all the time",
+            ],
+            correct: 1,
+          },
+          {
+            question:
+              "When a man needs some space or 'alone time' after a stressful day, what does it usually mean?",
+            options: [
+              "He's losing interest",
+              "He needs to decompress and recharge",
+              "He's angry with you",
+              "He is hiding something",
+            ],
+            correct: 1,
+          },
+          {
+            question:
+              "Which sense is most commonly cited as being primary for initial attraction in men?",
+            options: ["Hearing", "Smell", "Touch", "Sight"],
+            correct: 3,
+          },
+          {
+            question:
+              "What communication style do men generally prefer, especially when dealing with issues?",
+            options: [
+              "Subtle hints and clues",
+              "Direct and straightforward talk",
+              "Emotional and lengthy explanations",
+              "Not talking about it at all",
+            ],
+            correct: 1,
+          },
+          {
+            question:
+              "Besides respect, what do men highly value in a long-term relationship environment?",
+            options: [
+              "Constant excitement and surprises",
+              "A peaceful and drama-free atmosphere",
+              "A highly structured and scheduled life",
+              "Intense intellectual debates",
+            ],
+            correct: 1,
+          },
+        ];
+        const l1StartScreen = document.getElementById("l1-start");
+        const l1QuestionScreen = document.getElementById("l1-question");
+        const l1EndScreen = document.getElementById("l1-end");
+        const l1StartBtn = document.getElementById("l1-start-btn");
+        const l1RestartBtn = document.getElementById("l1-restart-btn");
+        const l1QuestionText = document.getElementById("l1-question-text");
+        const l1OptionsContainer = document.getElementById(
+          "l1-options-container"
+        );
+        const l1ProgressText = document.getElementById("l1-progress-text");
+        const l1ScoreText = document.getElementById("l1-score-text");
+        const l1TimerText = document.getElementById("l1-timer-text");
+        const l1HeartsCount = document.getElementById("l1-hearts-count");
+        let l1CurrentIndex = 0;
+        let l1Timer;
+        let l1TimeLeft = TIME_LIMIT;
+        function startLevel1() {
+          l1StartScreen.classList.add("hidden");
+          l1EndScreen.classList.add("hidden");
+          l1QuestionScreen.classList.remove("hidden");
+          l1CurrentIndex = 0;
+          totalHearts = 0;
+          l1HeartsCount.textContent = totalHearts;
+          showLevel1Question();
+        }
+        function showLevel1Question() {
+          clearInterval(l1Timer);
+          l1OptionsContainer.innerHTML = "";
+          l1TimeLeft = TIME_LIMIT;
+          l1TimerText.textContent = `Time: ${l1TimeLeft}`;
+          l1Timer = setInterval(() => {
+            l1TimeLeft--;
+            l1TimerText.textContent = `Time: ${l1TimeLeft}`;
+            if (l1TimeLeft <= 0) {
+              clearInterval(l1Timer);
+              handleLevel1Fail("You ran out of time!");
+            }
+          }, 1000);
+          const question = l1QuizData[l1CurrentIndex];
+          l1QuestionText.textContent = question.question;
+          l1ProgressText.textContent = `Question ${l1CurrentIndex + 1} of ${
+            l1QuizData.length
+          }`;
+          question.options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.textContent = option;
+            button.classList.add(
+              "w-full",
+              "p-3",
+              "border",
+              "rounded-lg",
+              "text-left",
+              "transition-colors",
+              "duration-200",
+              "border-white/20",
+              "hover:bg-white/10"
+            );
+            button.dataset.index = index;
+            button.addEventListener("click", selectLevel1Option);
+            l1OptionsContainer.appendChild(button);
+          });
+        }
+        function selectLevel1Option(e) {
+          clearInterval(l1Timer);
+          const selectedButton = e.target;
+          const selectedIndex = parseInt(selectedButton.dataset.index);
+          const correctIndex = l1QuizData[l1CurrentIndex].correct;
+          l1OptionsContainer
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = true));
+          if (selectedIndex === correctIndex) {
+            selectedButton.classList.add("correct-answer");
+            totalHearts++;
+            l1HeartsCount.textContent = totalHearts;
+            setTimeout(() => {
+              l1CurrentIndex++;
+              if (l1CurrentIndex < l1QuizData.length) {
+                showLevel1Question();
+              } else {
+                showLevel1Results(true);
+              }
+            }, 1000);
+          } else {
+            selectedButton.classList.add("incorrect-answer");
+            l1OptionsContainer
+              .querySelectorAll("button")
+              [correctIndex].classList.add("correct-answer");
+            setTimeout(
+              () =>
+                handleLevel1Fail(
+                  `You failed at question ${l1CurrentIndex + 1}.`
+                ),
+              2000
+            );
+          }
+        }
+        function handleLevel1Fail(message) {
+          clearInterval(l1Timer);
+          showLevel1Results(false, message);
+        }
+        function showLevel1Results(isWin, message = "") {
+          l1QuestionScreen.classList.add("hidden");
+          l1EndScreen.classList.remove("hidden");
+          const endTitle = l1EndScreen.querySelector("h2");
+          if (isWin) {
+            endTitle.textContent = "Congratulations! Level 1 Complete!";
+            l1ScoreText.textContent = `You've passed the first test with ${totalHearts} hearts!`;
+            level2Unlocked = true;
+            l1RestartBtn.textContent = "Next Level";
+            l1RestartBtn.onclick = () => showScreen(level2Quiz);
+          } else {
+            endTitle.textContent = "Game Over!";
+            l1ScoreText.textContent =
+              message ||
+              `You failed at question ${l1CurrentIndex + 1}. Try again!`;
+            l1RestartBtn.textContent = "Try Again";
+            l1RestartBtn.onclick = startLevel1;
+          }
+        }
+        l1StartBtn.addEventListener("click", startLevel1);
+
+        // --- LEVEL 2 LOGIC (REWORKED) ---
+        const l2Questions = [
+          {
+            question: "When he's stressed, you're more likely to...",
+            choiceA: "Give him space",
+            choiceB: "Offer comfort",
+            resultA: "independent",
+            resultB: "nurturer",
+          },
+          {
+            question: "The ideal weekend is...",
+            choiceA: "A spontaneous road trip",
+            choiceB: "A special dinner at home",
+            resultA: "adventurer",
+            resultB: "traditionalist",
+          },
+          {
+            question: "In a disagreement, you focus on...",
+            choiceA: "Finding a logical solution",
+            choiceB: "Understanding his feelings",
+            resultA: "director",
+            resultB: "nurturer",
+          },
+          {
+            question: "His niche hobby is...",
+            choiceA: "His time; you have your own interests",
+            choiceB: "Something you want to learn about",
+            resultA: "independent",
+            resultB: "nurturer",
+          },
+          {
+            question: "When making a big decision, you prefer to...",
+            choiceA: "Trust his judgment to lead",
+            choiceB: "Create a detailed plan together",
+            resultA: "traditionalist",
+            resultB: "director",
+          },
+          {
+            question: "A perfect date night is...",
+            choiceA: "Trying something new and exciting",
+            choiceB: "Going to a favorite, familiar spot",
+            resultA: "adventurer",
+            resultB: "traditionalist",
+          },
+          {
+            question: "Your career is...",
+            choiceA: "A core part of your identity",
+            choiceB: "Something you'd adapt for the relationship",
+            resultA: "independent",
+            resultB: "traditionalist",
+          },
+        ];
+        const l2Results = {
+          nurturer: {
+            title: "The Nurturer",
+            description:
+              "You excel at creating emotional safety and connection. Your strength is your empathy and your supportive nature. He feels seen, heard, and deeply cared for by you. Be mindful of not losing yourself in caring for others.",
+          },
+          director: {
+            title: "The Director",
+            description:
+              "You are a strong, capable partner who knows how to get things done. You bring structure and decisiveness to the relationship. He relies on your strength. Remember to balance leading with allowing him to lead, too.",
+          },
+          independent: {
+            title: "The Independent Spirit",
+            description:
+              "You value freedom, autonomy, and personal growth for both of you. You create a relationship free of pressure and control. He loves your self-sufficiency. Ensure you're also making time for shared goals and connection.",
+          },
+          traditionalist: {
+            title: "The Traditionalist Heart",
+            description:
+              "You appreciate clear roles and the comfort of established structures. You create a stable, predictable, and harmonious home life. He feels respected in his traditional role with you. Be open to flexibility when life gets unpredictable.",
+          },
+          adventurer: {
+            title: "The Adventurous Partner",
+            description:
+              "You bring excitement, fun, and new experiences to the relationship. Life with you is never boring. He loves the energy and spontaneity you provide. Make sure to also build moments of quiet, stable connection.",
+          },
+        };
+        const l2StartScreen = document.getElementById("l2-start-screen");
+        const l2QuestionScreen = document.getElementById("l2-question-screen");
+        const l2ResultsScreen = document.getElementById("l2-results-screen");
+        const l2StartBtn = document.getElementById("l2-start-btn");
+        const l2PlayAgainBtn = document.getElementById("l2-play-again-btn");
+        const l2NextLevelBtn = document.getElementById("l2-next-level-btn");
+        const l2ProgressText = document.getElementById("l2-progress-text");
+        const l2QuestionText = document.getElementById("l2-question-text");
+        const l2ChoiceAButton = document.getElementById("l2-choice-a");
+        const l2ChoiceBButton = document.getElementById("l2-choice-b");
+        const l2ResultText = document.getElementById("l2-result-text");
+        const l2ResultDescription = document.getElementById(
+          "l2-result-description"
+        );
+        let l2CurrentIndex = 0;
+        let l2UserChoices = {};
+
+        function startLevel2() {
+          l2CurrentIndex = 0;
+          l2UserChoices = {
+            nurturer: 0,
+            director: 0,
+            independent: 0,
+            traditionalist: 0,
+            adventurer: 0,
+          };
+          l2StartScreen.classList.add("hidden");
+          l2ResultsScreen.classList.add("hidden");
+          l2QuestionScreen.classList.remove("hidden");
+          displayLevel2Question();
+        }
+
+        function displayLevel2Question() {
+          const question = l2Questions[l2CurrentIndex];
+          l2ProgressText.textContent = `${l2CurrentIndex + 1} / ${
+            l2Questions.length
+          }`;
+          l2QuestionText.textContent = question.question;
+          l2ChoiceAButton.textContent = question.choiceA;
+          l2ChoiceBButton.textContent = question.choiceB;
+          l2ChoiceAButton.classList.remove("selected");
+          l2ChoiceBButton.classList.remove("selected");
+        }
+
+        function selectLevel2Choice(choice) {
+          const question = l2Questions[l2CurrentIndex];
+          const selectedResult =
+            choice === "A" ? question.resultA : question.resultB;
+          l2UserChoices[selectedResult]++;
+
+          if (choice === "A") l2ChoiceAButton.classList.add("selected");
+          else l2ChoiceBButton.classList.add("selected");
+
+          l2ChoiceAButton.disabled = true;
+          l2ChoiceBButton.disabled = true;
+
+          setTimeout(() => {
+            l2CurrentIndex++;
+            if (l2CurrentIndex < l2Questions.length) {
+              displayLevel2Question();
+            } else {
+              showLevel2Results();
+            }
+            l2ChoiceAButton.disabled = false;
+            l2ChoiceBButton.disabled = false;
+          }, 800);
+        }
+
+        function showLevel2Results() {
+          l2QuestionScreen.classList.add("hidden");
+          l2ResultsScreen.classList.remove("hidden");
+
+          let maxScore = 0;
+          let finalResult = "nurturer"; // Default
+          for (const type in l2UserChoices) {
+            if (l2UserChoices[type] > maxScore) {
+              maxScore = l2UserChoices[type];
+              finalResult = type;
+            }
+          }
+
+          l2ResultText.textContent = l2Results[finalResult].title;
+          l2ResultDescription.textContent = l2Results[finalResult].description;
+          level3Unlocked = true;
+        }
+        l2StartBtn.addEventListener("click", startLevel2);
+        l2PlayAgainBtn.addEventListener("click", startLevel2);
+        l2NextLevelBtn.addEventListener("click", () => showScreen(level3Quiz));
+        l2ChoiceAButton.addEventListener("click", () =>
+          selectLevel2Choice("A")
+        );
+        l2ChoiceBButton.addEventListener("click", () =>
+          selectLevel2Choice("B")
+        );
+
+        // --- LEVEL 3 LOGIC ---
+        const l3QuizData = [
+          {
+            question:
+              "Rank these qualities by their importance for a man in a long-term partner (most to least important).",
+            items: [
+              "Loyalty",
+              "Physical Attractiveness",
+              "Sense of Humor",
+              "Shared Hobbies",
+            ],
+            correctOrder: [
+              "Loyalty",
+              "Sense of Humor",
+              "Physical Attractiveness",
+              "Shared Hobbies",
+            ],
+          },
+          {
+            question:
+              "Rank these actions by how much they build trust with a man (most to least effective).",
+            items: [
+              "Being consistent",
+              "Supporting his goals",
+              "Apologizing sincerely",
+              "Keeping his secrets",
+            ],
+            correctOrder: [
+              "Keeping his secrets",
+              "Being consistent",
+              "Supporting his goals",
+              "Apologizing sincerely",
+            ],
+          },
+          {
+            question:
+              "Rank what men often find most stressful in a relationship (from most to least stressful).",
+            items: [
+              "Lack of appreciation",
+              "Feeling controlled",
+              "Constant arguments",
+              "Lack of intimacy",
+            ],
+            correctOrder: [
+              "Feeling controlled",
+              "Constant arguments",
+              "Lack of appreciation",
+              "Lack of intimacy",
+            ],
+          },
+          {
+            question:
+              "He's introducing you to his friends. Rank how you should act (most to least important).",
+            items: [
+              "Be genuinely interested in them",
+              "Let him have his 'guy time'",
+              "Try to impress them",
+              "Stay quiet and observe",
+            ],
+            correctOrder: [
+              "Be genuinely interested in them",
+              "Let him have his 'guy time'",
+              "Stay quiet and observe",
+              "Try to impress them",
+            ],
+          },
+          {
+            question:
+              "Rank these apologies by sincerity (most to least sincere).",
+            items: [
+              "'I'm sorry, but you also...'",
+              "'I'm sorry for my part.'",
+              "'I'm sorry if you were offended.'",
+              "'I'm sorry. I was wrong.'",
+            ],
+            correctOrder: [
+              "'I'm sorry. I was wrong.'",
+              "'I'm sorry for my part.'",
+              "'I'm sorry if you were offended.'",
+              "'I'm sorry, but you also...'",
+            ],
+          },
+          {
+            question:
+              "When he's stressed, rank these actions by helpfulness (most to least helpful).",
+            items: [
+              "Giving him physical space",
+              "Asking repeatedly what's wrong",
+              "Offering a simple hug",
+              "Telling him how to solve it",
+            ],
+            correctOrder: [
+              "Giving him physical space",
+              "Offering a simple hug",
+              "Telling him how to solve it",
+              "Asking repeatedly what's wrong",
+            ],
+          },
+          {
+            question:
+              "Rank these first date activities by effectiveness (most to least effective).",
+            items: [
+              "Going to a loud movie",
+              "An activity like mini-golf",
+              "Meeting for coffee/drinks",
+              "A formal, expensive dinner",
+            ],
+            correctOrder: [
+              "An activity like mini-golf",
+              "Meeting for coffee/drinks",
+              "A formal, expensive dinner",
+              "Going to a loud movie",
+            ],
+          },
+        ];
+        const l3StartScreen = document.getElementById("l3-start-screen");
+        const l3QuestionScreen = document.getElementById("l3-question-screen");
+        const l3EndScreen = document.getElementById("l3-end-screen");
+        const l3StartBtn = document.getElementById("l3-start-btn");
+        const l3RestartBtn = document.getElementById("l3-restart-btn");
+        const l3ProgressText = document.getElementById("l3-progress-text");
+        const l3QuestionText = document.getElementById("l3-question-text");
+        const l3RankList = document.getElementById("l3-rank-list");
+        const l3SubmitBtn = document.getElementById("l3-submit-btn");
+        const l3ScoreText = document.getElementById("l3-score-text");
+        const l3TimerText = document.getElementById("l3-timer-text");
+        const l3HeartsCount = document.getElementById("l3-hearts-count");
+        let l3CurrentIndex = 0;
+        let draggedItem = null;
+        let l3Timer;
+        let l3TimeLeft = TIME_LIMIT;
+        function startLevel3() {
+          l3StartScreen.classList.add("hidden");
+          l3EndScreen.classList.add("hidden");
+          l3QuestionScreen.classList.remove("hidden");
+          l3CurrentIndex = 0;
+          l3HeartsCount.textContent = totalHearts;
+          displayLevel3Question();
+        }
+        function displayLevel3Question() {
+          clearInterval(l3Timer);
+          l3TimeLeft = TIME_LIMIT;
+          l3TimerText.textContent = `Time: ${l3TimeLeft}`;
+          l3Timer = setInterval(() => {
+            l3TimeLeft--;
+            l3TimerText.textContent = `Time: ${l3TimeLeft}`;
+            if (l3TimeLeft <= 0) {
+              clearInterval(l3Timer);
+              showLevel3Results(false, "You ran out of time!");
+            }
+          }, 1000);
+          const questionData = l3QuizData[l3CurrentIndex];
+          l3QuestionText.textContent = questionData.question;
+          l3ProgressText.textContent = `Question ${l3CurrentIndex + 1} of ${
+            l3QuizData.length
+          }`;
+          l3RankList.innerHTML = "";
+          l3SubmitBtn.classList.remove("button-ready");
+          const shuffledItems = [...questionData.items].sort(
+            () => Math.random() - 0.5
+          );
+          shuffledItems.forEach((itemText) => {
+            const li = document.createElement("li");
+            li.textContent = itemText;
+            li.draggable = true;
+            li.classList.add(
+              "p-4",
+              "bg-white/10",
+              "rounded-lg",
+              "cursor-grab",
+              "border",
+              "border-white/20"
+            );
+            addDragListeners(li);
+            l3RankList.appendChild(li);
+          });
+        }
+        function addDragListeners(item) {
+          item.addEventListener("dragstart", () => {
+            draggedItem = item;
+            setTimeout(() => (item.style.opacity = "0.5"), 0);
+          });
+          item.addEventListener("dragend", () => {
+            setTimeout(() => {
+              if (draggedItem) {
+                draggedItem.style.opacity = "1";
+              }
+              draggedItem = null;
+              updateRankingVisuals();
+            }, 0);
+          });
+          item.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(l3RankList, e.clientY);
+            if (afterElement == null) l3RankList.appendChild(draggedItem);
+            else l3RankList.insertBefore(draggedItem, afterElement);
+          });
+        }
+        function getDragAfterElement(container, y) {
+          const draggableElements = [
+            ...container.querySelectorAll("li:not(.dragging)"),
+          ];
+          return draggableElements.reduce(
+            (closest, child) => {
+              const box = child.getBoundingClientRect();
+              const offset = y - box.top - box.height / 2;
+              if (offset < 0 && offset > closest.offset)
+                return { offset: offset, element: child };
+              else return closest;
+            },
+            { offset: Number.NEGATIVE_INFINITY }
+          ).element;
+        }
+        function updateRankingVisuals() {
+          const currentItems = l3RankList.querySelectorAll("li");
+          const correctOrder = l3QuizData[l3CurrentIndex].correctOrder;
+          let allCorrect = true;
+          currentItems.forEach((item, index) => {
+            if (item.textContent === correctOrder[index])
+              item.classList.add("correct-position");
+            else {
+              item.classList.remove("correct-position");
+              allCorrect = false;
+            }
+          });
+          if (allCorrect) l3SubmitBtn.classList.add("button-ready");
+          else l3SubmitBtn.classList.remove("button-ready");
+        }
+        function checkLevel3Answer() {
+          clearInterval(l3Timer);
+          const currentOrder = [...l3RankList.querySelectorAll("li")].map(
+            (li) => li.textContent
+          );
+          const correctOrder = l3QuizData[l3CurrentIndex].correctOrder;
+          const isCorrect =
+            JSON.stringify(currentOrder) === JSON.stringify(correctOrder);
+          if (isCorrect) {
+            totalHearts++;
+            l3HeartsCount.textContent = totalHearts;
+            setTimeout(() => {
+              l3CurrentIndex++;
+              if (l3CurrentIndex < l3QuizData.length) displayLevel3Question();
+              else showLevel3Results(true);
+            }, 1000);
+          } else {
+            setTimeout(
+              () =>
+                showLevel3Results(
+                  false,
+                  "That's not the right priority order."
+                ),
+              1000
+            );
+          }
+        }
+        function showLevel3Results(isWin, message = "") {
+          l3QuestionScreen.classList.add("hidden");
+          l3EndScreen.classList.remove("hidden");
+          const endTitle = l3EndScreen.querySelector("h2");
+          if (isWin) {
+            endTitle.textContent =
+              "Congratulations! You've Mastered His Priorities!";
+            l3ScoreText.textContent =
+              "You have a strong understanding of relationship dynamics.";
+            l4Unlocked = true;
+            l3RestartBtn.textContent = "Next Level";
+            l3RestartBtn.onclick = () => showScreen(level4Quiz);
+          } else {
+            endTitle.textContent = "Game Over!";
+            l3ScoreText.textContent =
+              message ||
+              `You failed at question ${l3CurrentIndex + 1}. Try again!`;
+            l3RestartBtn.textContent = "Try Again";
+            l3RestartBtn.onclick = startLevel3;
+          }
+        }
+        l3StartBtn.addEventListener("click", startLevel3);
+        l3SubmitBtn.addEventListener("click", checkLevel3Answer);
+
+        // --- LEVEL 4 LOGIC ---
+        const l4QuizData = [
+          {
+            scenario:
+              "He comes home from work visibly stressed and quiet. What's the best first move?",
+            options: [
+              "Give him space and let him open up on his own time.",
+              "Immediately ask what's wrong and press for details.",
+              "Start telling him about your day to cheer him up.",
+              "Suggest solutions for what might be bothering him.",
+            ],
+            correct: 0,
+          },
+          {
+            scenario:
+              "You're upset about something he did. How should you bring it up?",
+            options: [
+              "Wait until you're both calm and use 'I feel' statements.",
+              "Bring it up during another argument to prove a point.",
+              "Give him the silent treatment until he figures it out.",
+              "Complain about it to your friends and hope he hears.",
+            ],
+            correct: 0,
+          },
+          {
+            scenario: "He wants a guys' night out. Your reaction is to...",
+            options: [
+              "Encourage him to go and have a great time.",
+              "Ask if you can come along because you're bored.",
+              "Make him feel guilty for leaving you alone.",
+              "Tell him he'd rather spend time with them than you.",
+            ],
+            correct: 0,
+          },
+          {
+            scenario:
+              "He gets you a gift you really don't like. How do you respond?",
+            options: [
+              "Thank him genuinely for the thought and focus on his intention.",
+              "Tell him immediately that it's not your style.",
+              "Exchange it secretly and never mention it.",
+              "Wear/use it once to be polite, then hide it forever.",
+            ],
+            correct: 0,
+          },
+          {
+            scenario:
+              "You see a casual text from a female coworker on his phone. What's your move?",
+            options: [
+              "Trust him and don't worry about it unless there are other red flags.",
+              "Confront him angrily and demand to see all his messages.",
+              "Start snooping through his phone when he's not looking.",
+              "Text the coworker back and tell her to back off.",
+            ],
+            correct: 0,
+          },
+          {
+            scenario:
+              "He's been less affectionate lately. How do you address it?",
+            options: [
+              "Find a good time to mention you've missed his affection.",
+              "Withdraw emotionally to see if he notices.",
+              "Accuse him of not finding you attractive anymore.",
+              "Start a fight about something else entirely.",
+            ],
+            correct: 0,
+          },
+          {
+            scenario:
+              "He's telling a story you've heard a dozen times. You should...",
+            options: [
+              "Listen patiently and let him enjoy telling it.",
+              "Interrupt and finish the story for him.",
+              "Roll your eyes and say 'You've told me this one already.'",
+              "Start checking your phone while he's talking.",
+            ],
+            correct: 0,
+          },
+        ];
+        const l4StartScreen = document.getElementById("l4-start");
+        const l4QuestionScreen = document.getElementById("l4-question");
+        const l4EndScreen = document.getElementById("l4-end");
+        const l4StartBtn = document.getElementById("l4-start-btn");
+        const l4RestartBtn = document.getElementById("l4-restart-btn");
+        const l4QuestionText = document.getElementById("l4-question-text");
+        const l4OptionsContainer = document.getElementById(
+          "l4-options-container"
+        );
+        const l4ProgressText = document.getElementById("l4-progress-text");
+        const l4ScoreText = document.getElementById("l4-score-text");
+        const l4TimerText = document.getElementById("l4-timer-text");
+        const l4HeartsCount = document.getElementById("l4-hearts-count");
+        let l4CurrentIndex = 0;
+        let l4Timer;
+        let l4TimeLeft = TIME_LIMIT;
+        function startLevel4() {
+          l4StartScreen.classList.add("hidden");
+          l4EndScreen.classList.add("hidden");
+          l4QuestionScreen.classList.remove("hidden");
+          l4CurrentIndex = 0;
+          l4HeartsCount.textContent = totalHearts;
+          showLevel4Question();
+        }
+        function showLevel4Question() {
+          clearInterval(l4Timer);
+          l4TimeLeft = TIME_LIMIT;
+          l4TimerText.textContent = `Time: ${l4TimeLeft}`;
+          l4Timer = setInterval(() => {
+            l4TimeLeft--;
+            l4TimerText.textContent = `Time: ${l4TimeLeft}`;
+            if (l4TimeLeft <= 0) {
+              clearInterval(l4Timer);
+              showLevel4Results(false, "You ran out of time!");
+            }
+          }, 1000);
+          l4OptionsContainer.innerHTML = "";
+          const question = l4QuizData[l4CurrentIndex];
+          l4QuestionText.textContent = question.scenario;
+          l4ProgressText.textContent = `Scenario ${l4CurrentIndex + 1} of ${
+            l4QuizData.length
+          }`;
+          question.options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.textContent = option;
+            button.classList.add(
+              "w-full",
+              "p-3",
+              "border",
+              "rounded-lg",
+              "text-left",
+              "transition-colors",
+              "duration-200",
+              "border-white/20",
+              "hover:bg-white/10"
+            );
+            button.dataset.index = index;
+            button.addEventListener("click", selectLevel4Option);
+            l4OptionsContainer.appendChild(button);
+          });
+        }
+        function selectLevel4Option(e) {
+          clearInterval(l4Timer);
+          const selectedButton = e.target;
+          const selectedIndex = parseInt(selectedButton.dataset.index);
+          const correctIndex = l4QuizData[l4CurrentIndex].correct;
+          l4OptionsContainer
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = true));
+          if (selectedIndex === correctIndex) {
+            selectedButton.classList.add("correct-answer");
+            totalHearts++;
+            l4HeartsCount.textContent = totalHearts;
+            setTimeout(() => {
+              l4CurrentIndex++;
+              if (l4CurrentIndex < l4QuizData.length) showLevel4Question();
+              else showLevel4Results(true);
+            }, 1000);
+          } else {
+            selectedButton.classList.add("incorrect-answer");
+            l4OptionsContainer
+              .querySelectorAll("button")
+              [correctIndex].classList.add("correct-answer");
+            setTimeout(
+              () =>
+                showLevel4Results(
+                  false,
+                  `You failed at scenario ${l4CurrentIndex + 1}.`
+                ),
+              2000
+            );
+          }
+        }
+        function showLevel4Results(isWin, message = "") {
+          l4QuestionScreen.classList.add("hidden");
+          l4EndScreen.classList.remove("hidden");
+          const endTitle = l4EndScreen.querySelector("h2");
+          if (isWin) {
+            endTitle.textContent = "Congratulations! You're a Scenario Master!";
+            l4ScoreText.textContent =
+              "You've shown great judgment and emotional intelligence.";
+            level5Unlocked = true;
+            l4RestartBtn.textContent = "Next Level";
+            l4RestartBtn.onclick = () => showScreen(level5Quiz);
+          } else {
+            endTitle.textContent = "Game Over!";
+            l4ScoreText.textContent = message;
+            l4RestartBtn.textContent = "Try Again";
+            l4RestartBtn.onclick = startLevel4;
+          }
+        }
+        l4StartBtn.addEventListener("click", startLevel4);
+
+        // --- LEVEL 5 LOGIC ---
+        const l5QuizData = [
+          {
+            image:
+              "https://placehold.co/600x400/23a6d5/ffffff?text=Comfortable+Silence",
+            options: ["Boredom", "Peace", "Anger", "Awkwardness"],
+            correct: 1,
+          },
+          {
+            image:
+              "https://placehold.co/600x400/e73c7e/ffffff?text=Man+Working+Alone",
+            options: ["Neglect", "Focus", "Secrecy", "Sadness"],
+            correct: 1,
+          },
+          {
+            image:
+              "https://placehold.co/600x400/ee7752/ffffff?text=Woman+Laughing",
+            options: ["Joy", "Flirtation", "Mockery", "Silliness"],
+            correct: 0,
+          },
+          {
+            image:
+              "https://placehold.co/600x400/23d5ab/ffffff?text=Locked+Door",
+            options: ["Challenge", "Privacy", "Rejection", "Mystery"],
+            correct: 1,
+          },
+          {
+            image:
+              "https://placehold.co/600x400/e73c7e/ffffff?text=Two+People+Back-to-Back",
+            options: ["Conflict", "Independence", "Dislike", "Trust"],
+            correct: 3,
+          },
+          {
+            image:
+              "https://placehold.co/600x400/ee7752/ffffff?text=An+Open+Road",
+            options: ["Escape", "Future", "Loneliness", "Adventure"],
+            correct: 3,
+          },
+          {
+            image:
+              "https://placehold.co/600x400/23a6d5/ffffff?text=A+Cozy+Fireplace",
+            options: ["Passion", "Danger", "Comfort", "Sloth"],
+            correct: 2,
+          },
+        ];
+        const l5StartScreen = document.getElementById("l5-start");
+        const l5QuestionScreen = document.getElementById("l5-question");
+        const l5EndScreen = document.getElementById("l5-end");
+        const l5StartBtn = document.getElementById("l5-start-btn");
+        const l5RestartBtn = document.getElementById("l5-restart-btn");
+        const l5ImageEl = document.getElementById("l5-image");
+        const l5OptionsContainer = document.getElementById(
+          "l5-options-container"
+        );
+        const l5ProgressText = document.getElementById("l5-progress-text");
+        const l5ScoreText = document.getElementById("l5-score-text");
+        const l5TimerText = document.getElementById("l5-timer-text");
+        const l5HeartsCount = document.getElementById("l5-hearts-count");
+        let l5CurrentIndex = 0;
+        let l5Timer;
+        let l5TimeLeft = TIME_LIMIT;
+        function startLevel5() {
+          l5StartScreen.classList.add("hidden");
+          l5EndScreen.classList.add("hidden");
+          l5QuestionScreen.classList.remove("hidden");
+          l5CurrentIndex = 0;
+          l5HeartsCount.textContent = totalHearts;
+          showLevel5Question();
+        }
+        function showLevel5Question() {
+          clearInterval(l5Timer);
+          l5TimeLeft = TIME_LIMIT;
+          l5TimerText.textContent = `Time: ${l5TimeLeft}`;
+          l5Timer = setInterval(() => {
+            l5TimeLeft--;
+            l5TimerText.textContent = `Time: ${l5TimeLeft}`;
+            if (l5TimeLeft <= 0) {
+              clearInterval(l5Timer);
+              showLevel5Results(false, "You ran out of time!");
+            }
+          }, 1000);
+          l5OptionsContainer.innerHTML = "";
+          const question = l5QuizData[l5CurrentIndex];
+          l5ImageEl.src = question.image;
+          l5ProgressText.textContent = `Image ${l5CurrentIndex + 1} of ${
+            l5QuizData.length
+          }`;
+          question.options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.textContent = option;
+            button.classList.add(
+              "w-full",
+              "p-4",
+              "border",
+              "rounded-lg",
+              "text-center",
+              "font-semibold",
+              "transition-colors",
+              "duration-200",
+              "border-white/20",
+              "hover:bg-white/10"
+            );
+            button.dataset.index = index;
+            button.addEventListener("click", selectLevel5Option);
+            l5OptionsContainer.appendChild(button);
+          });
+        }
+        function selectLevel5Option(e) {
+          clearInterval(l5Timer);
+          const selectedButton = e.target;
+          const selectedIndex = parseInt(selectedButton.dataset.index);
+          const correctIndex = l5QuizData[l5CurrentIndex].correct;
+          l5OptionsContainer
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = true));
+          if (selectedIndex === correctIndex) {
+            selectedButton.classList.add("correct-answer");
+            totalHearts++;
+            l5HeartsCount.textContent = totalHearts;
+            setTimeout(() => {
+              l5CurrentIndex++;
+              if (l5CurrentIndex < l5QuizData.length) {
+                showLevel5Question();
+              } else {
+                showLevel5Results(true);
+              }
+            }, 1000);
+          } else {
+            selectedButton.classList.add("incorrect-answer");
+            l5OptionsContainer
+              .querySelectorAll("button")
+              [correctIndex].classList.add("correct-answer");
+            setTimeout(
+              () =>
+                showLevel5Results(
+                  false,
+                  `You failed at image ${l5CurrentIndex + 1}.`
+                ),
+              2000
+            );
+          }
+        }
+        function showLevel5Results(isWin, message = "") {
+          l5QuestionScreen.classList.add("hidden");
+          l5EndScreen.classList.remove("hidden");
+          const endTitle = l5EndScreen.querySelector("h2");
+          if (isWin) {
+            endTitle.textContent =
+              "Congratulations! You're an Intuition Expert!";
+            l5ScoreText.textContent =
+              "You've shown a remarkable understanding!";
+            l6Unlocked = true;
+            l5RestartBtn.textContent = "Next Level";
+            l5RestartBtn.onclick = () => showScreen(level6Quiz);
+          } else {
+            endTitle.textContent = "Game Over!";
+            l5ScoreText.textContent = message;
+            l5RestartBtn.textContent = "Try Again";
+            l5RestartBtn.onclick = startLevel5;
+          }
+        }
+        l5StartBtn.addEventListener("click", startLevel5);
+
+        // --- LEVEL 6 LOGIC ---
+        const l6QuizData = [
+          {
+            sentence:
+              "When he's quiet, he's often not being distant, he's being ____.",
+            answer: "focused",
+            hint: "Concentrating hard on a task.",
+          },
+          {
+            sentence:
+              "Men often communicate to exchange ____, while women often communicate to build connection.",
+            answer: "information",
+            hint: "It's about facts and data, not just feelings.",
+          },
+          {
+            sentence: "A man's ego is often tied to his sense of ____.",
+            answer: "competence",
+            hint: "His ability to do things well and be capable.",
+          },
+          {
+            sentence: "To a man, 'Can we talk?' often sounds like an ____.",
+            answer: "accusation",
+            hint: "It can feel like he's about to be blamed for something.",
+          },
+          {
+            sentence:
+              "Actions, more than words, are often a man's primary language of ____.",
+            answer: "love",
+            hint: "A five-letter word for deep affection.",
+          },
+          {
+            sentence:
+              "Constant criticism is not seen as helpful; it's seen as ____.",
+            answer: "disrespect",
+            hint: "The opposite of showing admiration or esteem.",
+          },
+          {
+            sentence:
+              "The quickest way to end an argument is often a sincere and immediate ____.",
+            answer: "apology",
+            hint: "Saying you are sorry for your part.",
+          },
+        ];
+        const l6StartScreen = document.getElementById("l6-start");
+        const l6QuestionScreen = document.getElementById("l6-question");
+        const l6EndScreen = document.getElementById("l6-end");
+        const l6StartBtn = document.getElementById("l6-start-btn");
+        const l6RestartBtn = document.getElementById("l6-restart-btn");
+        const l6QuestionContainer = document.getElementById(
+          "l6-question-container"
+        );
+        const l6Form = document.getElementById("l6-form");
+        const l6Input = document.getElementById("l6-input");
+        const l6ProgressText = document.getElementById("l6-progress-text");
+        const l6ScoreText = document.getElementById("l6-score-text");
+        const l6HintBtn = document.getElementById("l6-hint-btn");
+        const l6HintText = document.getElementById("l6-hint-text");
+        const l6TimerText = document.getElementById("l6-timer-text");
+        const l6HeartsCount = document.getElementById("l6-hearts-count");
+        let l6CurrentIndex = 0;
+        let l6Timer;
+        let l6TimeLeft = TIME_LIMIT;
+        function startLevel6() {
+          l6StartScreen.classList.add("hidden");
+          l6EndScreen.classList.add("hidden");
+          l6QuestionScreen.classList.remove("hidden");
+          l6CurrentIndex = 0;
+          l6HeartsCount.textContent = totalHearts;
+          showLevel6Question();
+        }
+        function showLevel6Question() {
+          clearInterval(l6Timer);
+          l6TimeLeft = TIME_LIMIT;
+          l6TimerText.textContent = `Time: ${l6TimeLeft}`;
+          l6Timer = setInterval(() => {
+            l6TimeLeft--;
+            l6TimerText.textContent = `Time: ${l6TimeLeft}`;
+            if (l6TimeLeft <= 0) {
+              clearInterval(l6Timer);
+              showLevel6Results(false, "You ran out of time!");
+            }
+          }, 1000);
+          l6Input.value = "";
+          l6Input.classList.remove("input-correct", "input-incorrect");
+          l6Input.disabled = false;
+          l6Form.querySelector("button").disabled = false;
+          l6HintText.classList.add("hidden");
+          l6HintBtn.classList.remove("hidden");
+          const question = l6QuizData[l6CurrentIndex];
+          l6ProgressText.textContent = `Question ${l6CurrentIndex + 1} of ${
+            l6QuizData.length
+          }`;
+          l6QuestionContainer.innerHTML = question.sentence.replace(
+            "____",
+            `<span class="text-yellow-300">____</span>`
+          );
+          l6HintText.textContent = `Hint: ${question.hint}`;
+          l6Input.focus();
+        }
+        function checkLevel6Answer(e) {
+          e.preventDefault();
+          clearInterval(l6Timer);
+          const userAnswer = l6Input.value.trim().toLowerCase();
+          const correctAnswer = l6QuizData[l6CurrentIndex].answer.toLowerCase();
+          l6Input.disabled = true;
+          l6Form.querySelector("button").disabled = true;
+          if (userAnswer === correctAnswer) {
+            l6Input.classList.add("input-correct");
+            totalHearts++;
+            l6HeartsCount.textContent = totalHearts;
+            setTimeout(() => {
+              l6CurrentIndex++;
+              if (l6CurrentIndex < l6QuizData.length) {
+                showLevel6Question();
+              } else {
+                showLevel6Results(true);
+              }
+            }, 1500);
+          } else {
+            l6Input.classList.add("input-incorrect");
+            l6Input.value = `Correct: ${correctAnswer}`;
+            setTimeout(
+              () =>
+                showLevel6Results(
+                  false,
+                  `You failed at question ${l6CurrentIndex + 1}.`
+                ),
+              2000
+            );
+          }
+        }
+        function showLevel6Results(isWin, message = "") {
+          l6QuestionScreen.classList.add("hidden");
+          l6EndScreen.classList.remove("hidden");
+          const endTitle = l6EndScreen.querySelector("h2");
+          if (isWin) {
+            endTitle.textContent =
+              "Congratulations! You're a Wordsmith of Wisdom!";
+            l6ScoreText.textContent = "You're ready for the final test!";
+            l7Unlocked = true;
+            l6RestartBtn.textContent = "Next Level";
+            l6RestartBtn.onclick = () => showScreen(level7Quiz);
+          } else {
+            endTitle.textContent = "Game Over!";
+            l6ScoreText.textContent = message;
+            l6RestartBtn.textContent = "Try Again";
+            l6RestartBtn.onclick = startLevel6;
+          }
+        }
+        l6StartBtn.addEventListener("click", startLevel6);
+        l6Form.addEventListener("submit", checkLevel6Answer);
+        l6HintBtn.addEventListener("click", () => {
+          l6HintText.classList.remove("hidden");
+          l6HintBtn.classList.add("hidden");
+        });
+
+        // --- LEVEL 7 LOGIC ---
+        const l7QuizData = [
+          {
+            quote:
+              "'Happy wife, happy life.' What is the wisest interpretation of this common saying?",
+            options: [
+              "A man's happiness depends entirely on his wife's mood.",
+              "Mutual happiness and support are key to a good life.",
+              "A woman should always get her way to keep the peace.",
+              "Men are incapable of being happy on their own.",
+            ],
+            correct: 1,
+          },
+          {
+            quote:
+              "'If you can't handle me at my worst, you don't deserve me at my best.' This quote is often considered...",
+            options: [
+              "A profound truth about unconditional love.",
+              "A healthy boundary for self-respect.",
+              "A red flag used to justify poor behavior.",
+              "Good advice for starting a new relationship.",
+            ],
+            correct: 2,
+          },
+          {
+            quote:
+              "'Never go to bed angry.' What's the potential downside of this advice?",
+            options: [
+              "It forces resolutions when one or both partners are too tired or emotional.",
+              "It's always better to resolve issues immediately, no matter what.",
+              "It shows a lack of commitment to solving problems.",
+              "Anger is a sign that the relationship is over.",
+            ],
+            correct: 0,
+          },
+          {
+            quote:
+              "'Love means never having to say you're sorry.' This famous line from 'Love Story' promotes what unhealthy dynamic?",
+            options: [
+              "The idea that true love makes you immune to mistakes.",
+              "The importance of constant, open apology.",
+              "The concept that actions speak louder than words.",
+              "A relationship built on perfect understanding.",
+            ],
+            correct: 0,
+          },
+          {
+            quote:
+              "'You complete me.' While romantic in movies, what potential issue does this highlight?",
+            options: [
+              "The beauty of two souls becoming one.",
+              "A healthy level of interdependence.",
+              "The danger of relying on another person for your self-worth.",
+              "A sign of a strong, unbreakable bond.",
+            ],
+            correct: 2,
+          },
+          {
+            quote:
+              "'A man is a success if he gets up in the morning and gets to bed at night, and in between does what he wants to do.' - Bob Dylan. How does this apply to relationships?",
+            options: [
+              "A man's happiness comes from freedom and autonomy, not just the relationship.",
+              "Relationships are a distraction from a man's true purpose.",
+              "A man should never have to compromise his desires.",
+              "Success is measured only by personal freedom.",
+            ],
+            correct: 0,
+          },
+          {
+            quote:
+              "'The meeting of two personalities is like the contact of two chemical substances: if there is any reaction, both are transformed.' - Carl Jung. What does this imply?",
+            options: [
+              "Relationships are dangerous and volatile.",
+              "People should never change for their partners.",
+              "True connection fundamentally changes and grows both people.",
+              "You should avoid people who are different from you.",
+            ],
+            correct: 2,
+          },
+        ];
+        const l7StartScreen = document.getElementById("l7-start");
+        const l7QuestionScreen = document.getElementById("l7-question");
+        const l7EndScreen = document.getElementById("l7-end");
+        const l7StartBtn = document.getElementById("l7-start-btn");
+        const l7RestartBtn = document.getElementById("l7-restart-btn");
+        const l7QuoteText = document.getElementById("l7-quote-text");
+        const l7OptionsContainer = document.getElementById(
+          "l7-options-container"
+        );
+        const l7ProgressText = document.getElementById("l7-progress-text");
+        const l7ScoreText = document.getElementById("l7-score-text");
+        const l7TimerText = document.getElementById("l7-timer-text");
+        const l7HeartsCount = document.getElementById("l7-hearts-count");
+        let l7CurrentIndex = 0;
+        let l7Timer;
+        let l7TimeLeft = TIME_LIMIT;
+        function startLevel7() {
+          l7StartScreen.classList.add("hidden");
+          l7EndScreen.classList.add("hidden");
+          l7QuestionScreen.classList.remove("hidden");
+          l7CurrentIndex = 0;
+          l7HeartsCount.textContent = totalHearts;
+          showLevel7Question();
+        }
+        function showLevel7Question() {
+          clearInterval(l7Timer);
+          l7TimeLeft = TIME_LIMIT;
+          l7TimerText.textContent = `Time: ${l7TimeLeft}`;
+          l7Timer = setInterval(() => {
+            l7TimeLeft--;
+            l7TimerText.textContent = `Time: ${l7TimeLeft}`;
+            if (l7TimeLeft <= 0) {
+              clearInterval(l7Timer);
+              showLevel7Results(false, "You ran out of time!");
+            }
+          }, 1000);
+          l7OptionsContainer.innerHTML = "";
+          const question = l7QuizData[l7CurrentIndex];
+          l7QuoteText.textContent = question.quote;
+          l7ProgressText.textContent = `Quote ${l7CurrentIndex + 1} of ${
+            l7QuizData.length
+          }`;
+          question.options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.textContent = option;
+            button.classList.add(
+              "w-full",
+              "p-3",
+              "border",
+              "rounded-lg",
+              "text-left",
+              "transition-colors",
+              "duration-200",
+              "border-white/20",
+              "hover:bg-white/10"
+            );
+            button.dataset.index = index;
+            button.addEventListener("click", selectLevel7Option);
+            l7OptionsContainer.appendChild(button);
+          });
+        }
+        function selectLevel7Option(e) {
+          clearInterval(l7Timer);
+          const selectedButton = e.target;
+          const selectedIndex = parseInt(selectedButton.dataset.index);
+          const correctIndex = l7QuizData[l7CurrentIndex].correct;
+          l7OptionsContainer
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = true));
+          if (selectedIndex === correctIndex) {
+            selectedButton.classList.add("correct-answer");
+            totalHearts++;
+            l7HeartsCount.textContent = totalHearts;
+            setTimeout(() => {
+              l7CurrentIndex++;
+              if (l7CurrentIndex < l7QuizData.length) {
+                showLevel7Question();
+              } else {
+                showLevel7Results(true);
+              }
+            }, 1500);
+          } else {
+            selectedButton.classList.add("incorrect-answer");
+            l7OptionsContainer
+              .querySelectorAll("button")
+              [correctIndex].classList.add("correct-answer");
+            setTimeout(
+              () =>
+                showLevel7Results(
+                  false,
+                  `You failed at quote ${l7CurrentIndex + 1}.`
+                ),
+              2000
+            );
+          }
+        }
+        function showLevel7Results(isWin, message = "") {
+          l7QuestionScreen.classList.add("hidden");
+          l7EndScreen.classList.remove("hidden");
+          const endTitle = l7EndScreen.querySelector("h2");
+          if (isWin) {
+            endTitle.textContent = "🏆 CONGRATULATIONS! 🏆";
+            l7ScoreText.textContent = `You have passed every test with a total of ${totalHearts} hearts and unlocked the secrets to his heart!`;
+            l7RestartBtn.textContent = "Play Again From Start";
+            l7RestartBtn.onclick = showLevelSelectionScreen;
+          } else {
+            endTitle.textContent = "Game Over!";
+            l7ScoreText.textContent = message;
+            l7RestartBtn.textContent = "Try Again";
+            l7RestartBtn.onclick = startLevel7;
+          }
+        }
+        l7StartBtn.addEventListener("click", startLevel7);
+      });
+    </script>
+  </body>
+</html>
