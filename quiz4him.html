@@ -1681,7 +1681,7 @@
                     }
                     await saveProgress();
 
-                    if(this.elements.nextBtn) {
+                    if (this.levelData.type === 'personality') {
                          this.elements.restartBtn.textContent = "Play Again";
                          this.elements.restartBtn.onclick = () => this.beginQuiz();
                     } else {
